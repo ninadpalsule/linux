@@ -1817,6 +1817,7 @@
 		#size-cells = <0>;
 		status = "okay";
 		i2c-mux-idle-disconnect;
+		reset-gpio = <&gpio0 ASPEED_GPIO(S, 5) GPIO_ACTIVE_LOW>;
 
 		i2c8mux0chn0: i2c@0 {
 			#address-cells = <1>;
