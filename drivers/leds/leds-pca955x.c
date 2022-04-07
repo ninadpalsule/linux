@@ -663,6 +663,10 @@ static int pca955x_probe(struct i2c_client *client)
 	if (!pca955x->leds)
 		return -ENOMEM;
 
+	err = i2c_smbus_throttle_client(client, 1000);
+	if (err)
+		return err;
+
 	i2c_set_clientdata(client, pca955x);
 
 	mutex_init(&pca955x->lock);
