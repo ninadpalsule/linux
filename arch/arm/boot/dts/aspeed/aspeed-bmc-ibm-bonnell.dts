@@ -270,8 +270,8 @@
 		reg = <0x51>;
 	};
 
-	max31785@52 {
-		compatible = "maxim,max31785a";
+	max31785b@52 {
+		compatible = "maxim,max31785b";
 		reg = <0x52>;
 		#address-cells = <1>;
 		#size-cells = <0>;
