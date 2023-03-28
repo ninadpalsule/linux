@@ -23,6 +23,7 @@ Hardware Monitoring Kernel Drivers
    abituguru3
    acbel-fsg032
    acpi_power_meter
+   acbel-fsg032
    ad7314
    adc128d818
    adm1021
