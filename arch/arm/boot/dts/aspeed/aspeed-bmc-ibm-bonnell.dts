@@ -129,11 +129,11 @@
 &gpio0 {
 	gpio-line-names =
 		/*A0-A7*/	"","","","","","","","",
-		/*B0-B7*/	"","","","","","","checkstop","",
+		/*B0-B7*/	"bmc-management-ready","","","","","","checkstop","",
 		/*C0-C7*/	"","","","","","","","",
 		/*D0-D7*/	"","","","","","","","",
 		/*E0-E7*/	"","","","","","","","",
-		/*F0-F7*/	"","","rtc-battery-voltage-read-enable","reset-cause-pinhole","","","","",
+		/*F0-F7*/	"","","rtc-battery-voltage-read-enable","reset-cause-pinhole","","","factory-reset-toggle","",
 		/*G0-G7*/	"fan0","fan1","","","","","","",
 		/*H0-H7*/	"","","rear-enc-id0","rear-enc-fault0","","","","",
 		/*I0-I7*/	"","","","","","","bmc-secure-boot","",
