@@ -711,6 +711,7 @@ static int aspeed_i2c_master_xfer(struct i2c_adapter *adap,
 		 * master command.
 		 */
 		spin_lock_irqsave(&bus->lock, flags);
+		bus->msgs = NULL;
 		if (bus->master_state == ASPEED_I2C_MASTER_PENDING)
 			bus->master_state = ASPEED_I2C_MASTER_INACTIVE;
 		spin_unlock_irqrestore(&bus->lock, flags);
