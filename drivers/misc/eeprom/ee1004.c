@@ -228,6 +228,10 @@ static int ee1004_probe(struct i2c_client *client)
 				     I2C_FUNC_SMBUS_BYTE | I2C_FUNC_SMBUS_READ_BYTE_DATA))
 		return -EPFNOSUPPORT;
 
+	rc = i2c_smbus_read_byte(client);
+	if (rc < 0)
+		return -ENODEV;
+
 	mutex_lock(&ee1004_busses_lock);
 	list_for_each_entry(bus, &ee1004_busses, list) {
 		if (bus->adapter == client->adapter) {
