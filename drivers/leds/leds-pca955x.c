@@ -712,6 +712,7 @@ static int pca955x_probe(struct i2c_client *client)
 				ls2[reg] = pca955x_ledsel(ls2[reg], bit, PCA955X_LS_LED_ON);
 			else if (pca955x_ledstate(ls2[reg], bit) == PCA955X_LS_BLINK0) {
 				keep_psc0 = true;
+				led->default_trigger = "timer";
 				set_bit(i, &pca955x->active_blink);
 			}
 
