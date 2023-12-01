@@ -1173,7 +1173,7 @@
 			#size-cells = <0>;
 			reg = <4>;
 
-			tca9548@71 {
+			tca9548@70 {
 				compatible = "nxp,pca9548";
 				reg = <0x71>;
 				#address-cells = <1>;
