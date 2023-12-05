@@ -1175,7 +1175,7 @@
 
 			tca9548@70 {
 				compatible = "nxp,pca9548";
-				reg = <0x71>;
+				reg = <0x70>;
 				#address-cells = <1>;
 				#size-cells = <0>;
 				status = "okay";
