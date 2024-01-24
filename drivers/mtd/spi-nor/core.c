@@ -381,6 +381,35 @@ int spi_nor_write_enable(struct spi_nor *nor)
 }
 
 /**
+ * spi_nor_vsr_write_enable() - Set write enable latch for volatile status register.
+ * @nor:	pointer to 'struct spi_nor'.
+ *
+ * Return: 0 on success, -errno otherwise.
+ */
+int spi_nor_vsr_write_enable(struct spi_nor *nor)
+{
+	int ret;
+
+	if (nor->spimem) {
+		struct spi_mem_op op = SPI_NOR_VSR_WREN_OP;
+
+		spi_nor_spimem_setup_op(nor, &op, nor->reg_proto);
+
+		ret = spi_mem_exec_op(nor->spimem, &op);
+	} else {
+		ret = spi_nor_controller_ops_write_reg(nor, SPINOR_OP_VSR_WREN,
+						       NULL, 0);
+	}
+
+	if (ret)
+		dev_dbg(nor->dev,
+			"error %d on Write Enable for Volatile Status Register\n",
+			ret);
+
+	return ret;
+}
+
+/**
  * spi_nor_write_disable() - Send Write Disable instruction to the chip.
  * @nor:	pointer to 'struct spi_nor'.
  *
@@ -796,7 +825,11 @@ int spi_nor_write_sr(struct spi_nor *nor, const u8 *sr, size_t len)
 {
 	int ret;
 
-	ret = spi_nor_write_enable(nor);
+	if (nor->flags & SNOR_F_WR_VSR)
+		ret = spi_nor_vsr_write_enable(nor);
+	else
+		ret = spi_nor_write_enable(nor);
+
 	if (ret)
 		return ret;
 
@@ -1426,7 +1459,7 @@ static void spi_nor_rww_end_rd(struct spi_nor *nor, loff_t start, size_t len)
 	mutex_unlock(&nor->lock);
 }
 
-static int spi_nor_prep_and_lock_rd(struct spi_nor *nor, loff_t start, size_t len)
+int spi_nor_prep_and_lock_rd(struct spi_nor *nor, loff_t start, size_t len)
 {
 	int ret;
 
@@ -1455,7 +1488,7 @@ static void spi_nor_unlock_and_unprep_rd(struct spi_nor *nor, loff_t start, size
 	spi_nor_unprep(nor);
 }
 
-static u32 spi_nor_convert_addr(struct spi_nor *nor, loff_t addr)
+u32 spi_nor_convert_addr(struct spi_nor *nor, loff_t addr)
 {
 	if (!nor->params->convert_addr)
 		return addr;
@@ -2891,6 +2924,9 @@ static void spi_nor_init_fixup_flags(struct spi_nor *nor)
 
 	if (fixup_flags & SPI_NOR_IO_MODE_EN_VOLATILE)
 		nor->flags |= SNOR_F_IO_MODE_EN_VOLATILE;
+
+	if (fixup_flags & SPI_NOR_FORCE_WRITE_VOLATILE_SR)
+		nor->flags |= SNOR_F_WR_VSR;
 }
 
 /**
@@ -3532,6 +3568,9 @@ int spi_nor_scan(struct spi_nor *nor, const char *name,
 
 	/* No mtd_info fields should be used up to this point. */
 	spi_nor_set_mtd_info(nor);
+
+	if (info->fixups && info->fixups->force_fixup)
+		info->fixups->force_fixup(nor);
 
 	dev_info(dev, "%s (%lld Kbytes)\n", info->name,
 			(long long)mtd->size >> 10);
