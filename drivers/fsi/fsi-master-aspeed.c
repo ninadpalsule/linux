@@ -12,11 +12,16 @@
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/regmap.h>
+#include <linux/reset.h>
 #include <linux/slab.h>
 #include <linux/iopoll.h>
 #include <linux/gpio/consumer.h>
 
 #include "fsi-master.h"
+
+struct fsi_master_aspeed_data {
+	u32 opb_retry_counter;
+};
 
 struct fsi_master_aspeed {
 	struct fsi_master	master;
@@ -24,6 +29,7 @@ struct fsi_master_aspeed {
 	struct device		*dev;
 	void __iomem		*base;
 	struct clk		*clk;
+	struct reset_control	*reset;
 	struct gpio_desc	*cfam_reset_gpio;
 };
 
@@ -536,6 +542,8 @@ static int tacoma_cabled_fsi_fixup(struct device *dev)
 
 static int fsi_master_aspeed_probe(struct platform_device *pdev)
 {
+	const struct fsi_master_aspeed_data *md = of_device_get_match_data(&pdev->dev);
+	u32 opb_retry_counter = md ? md->opb_retry_counter : 0x10;
 	struct fsi_master_aspeed *aspeed;
 	int rc, links, reg;
 	__be32 raw;
@@ -570,6 +578,17 @@ static int fsi_master_aspeed_probe(struct platform_device *pdev)
 		goto err_free_aspeed;
 	}
 
+	aspeed->reset = devm_reset_control_get_optional_shared(aspeed->dev, NULL);
+	if (aspeed->reset) {
+		if (IS_ERR(aspeed->reset)) {
+			dev_err(aspeed->dev, "couldn't get reset\n");
+			rc = PTR_ERR(aspeed->reset);
+			goto err_release;
+		}
+
+		reset_control_deassert(aspeed->reset);
+	}
+
 	rc = setup_cfam_reset(aspeed);
 	if (rc) {
 		dev_err(&pdev->dev, "CFAM reset GPIO setup failed\n");
@@ -579,8 +598,7 @@ static int fsi_master_aspeed_probe(struct platform_device *pdev)
 	writel(OPB1_XFER_ACK_EN | OPB0_XFER_ACK_EN,
 			aspeed->base + OPB_IRQ_MASK);
 
-	/* TODO: determine an appropriate value */
-	writel(0x10, aspeed->base + OPB_RETRY_COUNTER);
+	writel(opb_retry_counter, aspeed->base + OPB_RETRY_COUNTER);
 
 	writel(ctrl_base, aspeed->base + OPB_CTRL_BASE);
 	writel(fsi_base, aspeed->base + OPB_FSI_BASE);
@@ -602,7 +620,7 @@ static int fsi_master_aspeed_probe(struct platform_device *pdev)
 	rc = opb_readl(aspeed, ctrl_base + FSI_MVER, &raw);
 	if (rc) {
 		dev_err(&pdev->dev, "failed to read hub version\n");
-		goto err_release;
+		goto err_reset;
 	}
 
 	reg = be32_to_cpu(raw);
@@ -627,7 +645,7 @@ static int fsi_master_aspeed_probe(struct platform_device *pdev)
 
 	rc = fsi_master_register(&aspeed->master);
 	if (rc)
-		goto err_release;
+		goto err_reset;
 
 	/* At this point, fsi_master_register performs the device_initialize(),
 	 * and holds the sole reference on master.dev. This means the device
@@ -639,6 +657,9 @@ static int fsi_master_aspeed_probe(struct platform_device *pdev)
 	get_device(&aspeed->master.dev);
 	return 0;
 
+err_reset:
+	if (aspeed->reset)
+		reset_control_assert(aspeed->reset);
 err_release:
 	clk_disable_unprepare(aspeed->clk);
 err_free_aspeed:
@@ -651,13 +672,32 @@ static int fsi_master_aspeed_remove(struct platform_device *pdev)
 	struct fsi_master_aspeed *aspeed = platform_get_drvdata(pdev);
 
 	fsi_master_unregister(&aspeed->master);
+
+	if (aspeed->reset)
+		reset_control_assert(aspeed->reset);
+
 	clk_disable_unprepare(aspeed->clk);
 
 	return 0;
 }
 
+static const struct fsi_master_aspeed_data fsi_master_ast2600_data = {
+	.opb_retry_counter = 0x10,
+};
+
+static const struct fsi_master_aspeed_data fsi_master_ast2700_data = {
+	.opb_retry_counter = 0x00300010,
+};
+
 static const struct of_device_id fsi_master_aspeed_match[] = {
-	{ .compatible = "aspeed,ast2600-fsi-master" },
+	{
+		.compatible = "aspeed,ast2600-fsi-master",
+		.data = &fsi_master_ast2600_data,
+	},
+	{
+		.compatible = "aspeed,ast2700-fsi-master",
+		.data = &fsi_master_ast2700_data,
+	},
 	{ },
 };
 MODULE_DEVICE_TABLE(of, fsi_master_aspeed_match);
