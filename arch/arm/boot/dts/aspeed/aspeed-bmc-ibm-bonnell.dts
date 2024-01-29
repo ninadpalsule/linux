@@ -601,31 +601,3 @@
 };
 
 #include "ibm-power10-dual.dtsi"
-
-&cfam0_i2c10 {
-	eeprom@50 {
-		compatible = "atmel,at30tse004a";
-		reg = <0x50>;
-	};
-};
-
-&cfam0_i2c11 {
-	eeprom@50 {
-		compatible = "atmel,at30tse004a";
-		reg = <0x50>;
-	};
-};
-
-&cfam0_i2c12 {
-	eeprom@50 {
-		compatible = "atmel,at30tse004a";
-		reg = <0x50>;
-	};
-};
-
-&cfam0_i2c13 {
-	eeprom@50 {
-		compatible = "atmel,at30tse004a";
-		reg = <0x50>;
-	};
-};
