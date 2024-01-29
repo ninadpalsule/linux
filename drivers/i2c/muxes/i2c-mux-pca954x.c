@@ -88,6 +88,7 @@ struct pca954x {
 	struct irq_domain *irq;
 	unsigned int irq_mask;
 	raw_spinlock_t lock;
+	bool hold_idle;
 };
 
 /* Provide specs for the PCA954x types we know about */
@@ -231,6 +232,11 @@ static u8 pca954x_regval(struct pca954x *data, u8 chan)
 		return 1 << chan;
 }
 
+static int pca954x_select_chan_idle(struct i2c_mux_core *muxc, u32 chan)
+{
+	return 0;
+}
+
 static int pca954x_select_chan(struct i2c_mux_core *muxc, u32 chan)
 {
 	struct pca954x *data = i2c_mux_priv(muxc);
@@ -316,6 +322,36 @@ static ssize_t idle_state_store(struct device *dev,
 }
 
 static DEVICE_ATTR_RW(idle_state);
+
+static ssize_t hold_idle_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_mux_core *muxc = i2c_get_clientdata(client);
+	struct pca954x *data = i2c_mux_priv(muxc);
+
+	return sysfs_emit(buf, "%d\n", data->hold_idle);
+}
+
+static ssize_t hold_idle_store(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_mux_core *muxc = i2c_get_clientdata(client);
+	struct pca954x *data = i2c_mux_priv(muxc);
+
+	if (kstrtobool(buf, &data->hold_idle) < 0)
+		return -EINVAL;
+
+	if (data->hold_idle)
+		muxc->select = pca954x_select_chan_idle;
+	else
+		muxc->select = pca954x_select_chan;
+
+	return count;
+}
+
+static DEVICE_ATTR_RW(hold_idle);
 
 static irqreturn_t pca954x_irq_handler(int irq, void *dev_id)
 {
@@ -472,6 +508,11 @@ static int pca954x_probe(struct i2c_client *client)
 			data->idle_state = MUX_IDLE_DISCONNECT;
 	}
 
+	if (device_property_read_bool(dev, "hold-idle")) {
+		muxc->select = pca954x_select_chan_idle;
+		data->hold_idle = true;
+	}
+
 	/*
 	 * Write the mux register at addr to verify
 	 * that the mux is in fact present. This also
@@ -509,6 +550,7 @@ static int pca954x_probe(struct i2c_client *client)
 	 * so don't fail completely on error.
 	 */
 	device_create_file(dev, &dev_attr_idle_state);
+	device_create_file(dev, &dev_attr_hold_idle);
 
 	dev_info(dev, "registered %d multiplexed busses for I2C %s %s\n",
 		 num, data->chip->muxtype == pca954x_ismux

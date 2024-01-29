@@ -424,6 +424,7 @@
 		#size-cells = <0>;
 		status = "okay";
 		i2c-mux-idle-disconnect;
+		hold-idle;
 
 		i2c4mux0chn0: i2c@0 {
 			#address-cells = <1>;
@@ -569,6 +570,7 @@
 		#size-cells = <0>;
 		status = "okay";
 		i2c-mux-idle-disconnect;
+		hold-idle;
 
 		i2c5mux0chn0: i2c@0 {
 			#address-cells = <1>;
@@ -726,6 +728,7 @@
 		#size-cells = <0>;
 		status = "okay";
 		i2c-mux-idle-disconnect;
+		hold-idle;
 
 		i2c6mux0chn0: i2c@0 {
 			#address-cells = <1>;
