@@ -567,6 +567,7 @@ static void pca954x_remove(struct i2c_client *client)
 {
 	struct i2c_mux_core *muxc = i2c_get_clientdata(client);
 
+	device_remove_file(&client->dev, &dev_attr_hold_idle);
 	device_remove_file(&client->dev, &dev_attr_idle_state);
 
 	pca954x_cleanup(muxc);
