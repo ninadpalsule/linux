@@ -602,6 +602,7 @@ static int pca955x_probe(struct i2c_client *client)
 	u8 ls1[4];
 	u8 ls2[4];
 	struct pca955x_platform_data *pdata;
+	u8 ls;
 	u8 psc0;
 	bool keep_psc0 = false;
 	bool set_default_label = false;
@@ -678,12 +679,18 @@ static int pca955x_probe(struct i2c_client *client)
 	init_data.devicename = "pca955x";
 
 	nls = pca955x_num_led_regs(chip->bits);
+	ls = pca955x_num_input_regs(chip->bits) + 4;
 	/* use auto-increment feature to read all the led selectors at once */
-	err = i2c_smbus_read_i2c_block_data(client,
-					    0x10 | (pca955x_num_input_regs(chip->bits) + 4), nls,
-					    ls1);
-	if (err < 0)
-		return err;
+	err = i2c_smbus_read_i2c_block_data(client, 0x10 | ls, nls, ls1);
+	if (err < 0) {
+		/* sometimes auto-increment feature times out, so retry */
+		for (i = 0; i < nls; ++i) {
+			err = i2c_smbus_read_byte_data(client, ls + i);
+			if (err < 0)
+				return err;
+			ls1[i] = err;
+		}
+	}
 
 	for (i = 0; i < nls; ++i)
 		ls2[i] = ls1[i];
