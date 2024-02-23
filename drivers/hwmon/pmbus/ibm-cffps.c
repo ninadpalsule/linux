@@ -55,6 +55,7 @@ enum {
 	CFFPS_DEBUGFS_CCIN,
 	CFFPS_DEBUGFS_FW,
 	CFFPS_DEBUGFS_ON_OFF_CONFIG,
+	CFFPS_DEBUGFS_SN,
 	CFFPS_DEBUGFS_NUM_ENTRIES
 };
 
@@ -191,6 +192,9 @@ static ssize_t ibm_cffps_debugfs_read(struct file *file, char __user *buf,
 		rc = i2c_smbus_read_byte_data(psu->client, PMBUS_ON_OFF_CONFIG);
 		if (rc >= 0)
 			rc = snprintf(data, 3, "%02x", rc);
+		break;
+	case CFFPS_DEBUGFS_SN:
+		rc = i2c_smbus_read_block_data(psu->client, PMBUS_MFR_SERIAL, data);
 		break;
 	default:
 		rc = -EINVAL;
@@ -485,6 +489,7 @@ static int ibm_cffps_probe(struct i2c_client *client)
 	struct ibm_cffps *psu;
 	const void *md = of_device_get_match_data(&client->dev);
 	const struct i2c_device_id *id;
+	struct dentry *mfr_serial;
 
 	if (md) {
 		vs = (enum versions)md;
@@ -560,6 +565,13 @@ static int ibm_cffps_probe(struct i2c_client *client)
 
 	for (i = 0; i < CFFPS_DEBUGFS_NUM_ENTRIES; ++i)
 		psu->debugfs_entries[i] = i;
+
+	mfr_serial = debugfs_lookup("mfr_serial", debugfs);
+	if(!mfr_serial) {
+                debugfs_create_file("mfr_serial", 0444, debugfs,
+                                    &psu->debugfs_entries[CFFPS_DEBUGFS_SN],
+                                    &ibm_cffps_fops);
+	}
 
 	debugfs_create_file("input_history", 0444, debugfs, psu, &ibm_cffps_input_history_fops);
 	debugfs_create_file("max_power_out", 0444, debugfs,
