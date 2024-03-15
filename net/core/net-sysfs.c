@@ -620,6 +620,22 @@ static ssize_t threaded_store(struct device *dev,
 }
 static DEVICE_ATTR_RW(threaded);
 
+static ssize_t ncsi_timeout_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct net_device *netdev = to_net_dev(dev);
+
+	return sysfs_emit(buf, fmt_dec, netdev->ncsi_timeout);
+}
+static ssize_t ncsi_timeout_store(struct device *dev, struct device_attribute *attr,
+				  const char *buf, size_t len)
+{
+	struct net_device *netdev = to_net_dev(dev);
+
+	netdev->ncsi_timeout = 0;
+	return len;
+}
+static DEVICE_ATTR_RW(ncsi_timeout);
+
 static struct attribute *net_class_attrs[] __ro_after_init = {
 	&dev_attr_netdev_group.attr,
 	&dev_attr_type.attr,
@@ -653,6 +669,7 @@ static struct attribute *net_class_attrs[] __ro_after_init = {
 	&dev_attr_carrier_up_count.attr,
 	&dev_attr_carrier_down_count.attr,
 	&dev_attr_threaded.attr,
+	&dev_attr_ncsi_timeout.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(net_class);

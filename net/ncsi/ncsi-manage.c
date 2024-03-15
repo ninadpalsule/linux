@@ -140,6 +140,8 @@ bad_state:
 	default:
 		netdev_err(ndp->ndev.dev, "NCSI Channel %d timed out!\n",
 			   nc->id);
+		ndp->ndev.dev->ncsi_timeout = 1;
+		sysfs_notify(&ndp->ndev.dev->dev.kobj, NULL, "ncsi_timeout");
 		ncsi_report_link(ndp, true);
 		ndp->flags |= NCSI_DEV_RESHUFFLE;
 
