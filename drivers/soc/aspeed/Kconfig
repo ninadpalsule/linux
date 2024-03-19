@@ -70,6 +70,43 @@ config ASPEED_XDMA
 	  and a host processor. The driver provides ioctl() interface to reset
 	  and initialize engine.
 
+menu "ASPEED eSPI Support"
+
+config ASPEED_ESPI
+	bool "ASPEED eSPI slave driver"
+	select REGMAP
+	select MFD_SYSCON
+	depends on ASPEED_ESPI_FLASH
+	default n
+	help
+	  Enable driver support for the Aspeed eSPI engine. The eSPI engine
+	  plays as a slave device in BMC to communicate with the Host over
+	  the eSPI interface.
+
+menu "ASPEED eSPI Flash channel support"
+
+config  ASPEED_ESPI_FLASH
+	bool "ASPEED eSPI flash channel support"
+	default n
+	depends on ASPEED_ESPI_FLASH_MAFS
+	select ASPEED_ESPI
+	help
+	  Enable eSPI flash channel support.
+
+menu "ASPEED eSPI flash modes"
+
+config ASPEED_ESPI_FLASH_MAFS
+	bool "Master attached flash sharing (MAFS) support in eSPI"
+	default n
+	select ASPEED_ESPI_FLASH
+	help
+	  Select this option if you have a Master attached flash connected to
+	  the eSPI controller.
+
+endmenu # eSPI Flash Modes
+endmenu # eSPI Flash Channel support
+endmenu # eSPI Support
+
 endmenu
 
 endif
