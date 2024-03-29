@@ -48,6 +48,14 @@ static void acbel_fsg032_init_debugfs(struct i2c_client *client)
 	debugfs_create_file("fw_version", 0444, debugfs, client, &acbel_debugfs_ops);
 }
 
+static int acbel_fsg032_handle_status(struct i2c_client *client, int page, int reg, int status, u16 mask)
+{
+	if (mask == PB_IIN_OC_FAULT || mask == PB_IOUT_OC_FAULT)
+		return pmbus_write_byte_data(client, page, PMBUS_STATUS_INPUT, 0xff);
+
+	return -ENODATA;
+}
+
 static const struct i2c_device_id acbel_fsg032_id[] = {
 	{ "acbel_fsg032" },
 	{}
@@ -61,6 +69,7 @@ static struct pmbus_driver_info acbel_fsg032_info = {
 		   PMBUS_HAVE_FAN12 | PMBUS_HAVE_STATUS_VOUT |
 		   PMBUS_HAVE_STATUS_IOUT | PMBUS_HAVE_STATUS_TEMP |
 		   PMBUS_HAVE_STATUS_INPUT | PMBUS_HAVE_STATUS_FAN12,
+	.handle_status = acbel_fsg032_handle_status,
 };
 
 static int acbel_fsg032_probe(struct i2c_client *client)

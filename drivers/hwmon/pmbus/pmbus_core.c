@@ -1091,6 +1091,7 @@ static int pmbus_get_boolean(struct i2c_client *client, struct pmbus_boolean *b,
 			     int index)
 {
 	struct pmbus_data *data = i2c_get_clientdata(client);
+	const struct pmbus_driver_info *info = data->info;
 	struct pmbus_sensor *s1 = b->s1;
 	struct pmbus_sensor *s2 = b->s2;
 	u16 mask = pb_index_to_mask(index);
@@ -1112,10 +1113,22 @@ static int pmbus_get_boolean(struct i2c_client *client, struct pmbus_boolean *b,
 		pmbus_update_sensor_data(client, s2);
 
 	regval = status & mask;
-	if (regval) {
-		ret = _pmbus_write_byte_data(client, page, reg, regval);
-		if (ret)
-			goto unlock;
+	if (info->handle_status) {
+		ret = info->handle_status(client, page, reg, status, mask);
+		if (ret) {
+			if (ret == -ENODATA)
+				goto default_handle_status;
+			else
+				goto unlock;
+		}
+	}
+	else {
+default_handle_status:
+		if (regval) {
+			ret = _pmbus_write_byte_data(client, page, reg, regval);
+			if (ret)
+				goto unlock;
+		}
 	}
 	if (s1 && s2) {
 		s64 v1, v2;
