@@ -164,6 +164,8 @@
 #define XDMA_AST2600_INPRG_US_CMD20		0x70
 #define XDMA_AST2600_INPRG_US_CMD21		0x74
 
+#define XDMA_AST2600_MAX_LEN		(XDMA_CMD_AST2600_CMD_LINE_SIZE - 255)
+
 struct aspeed_xdma_cmd {
 	u64 host_addr;
 	u64 pitch;
@@ -378,7 +380,7 @@ static unsigned int aspeed_xdma_ast2600_set_cmd(struct aspeed_xdma *ctx,
 		"host[%016llx]\n", op->direction ? "upstream" : "downstream",
 		bmc_addr, op->len, op->host_addr);
 
-	if (op->len > XDMA_CMD_AST2600_CMD_LINE_SIZE) {
+	if (op->len > XDMA_AST2600_MAX_LEN) {
 		unsigned int rem;
 		unsigned int total;
 
