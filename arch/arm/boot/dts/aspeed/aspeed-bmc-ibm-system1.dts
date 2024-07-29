@@ -161,18 +161,22 @@
 		};
 
 		led-b {
+			label = "nvmed0-fault-led";
 			gpios = <&pca4 4 GPIO_ACTIVE_HIGH>;
 		};
 
 		led-c {
+			label = "nvmed1-fault-led";
 			gpios = <&pca4 5 GPIO_ACTIVE_HIGH>;
 		};
 
 		led-d {
+			label = "nvmed2-fault-led";
 			gpios = <&pca4 6 GPIO_ACTIVE_HIGH>;
 		};
 
 		led-e {
+			label = "nvmed3-fault-led";
 			gpios = <&pca4 7 GPIO_ACTIVE_HIGH>;
 		};
 	};
@@ -203,6 +207,48 @@
 			label = "nvme3-presence";
 			gpios = <&pca4 3 GPIO_ACTIVE_LOW>;
 			linux,code = <3>;
+		};
+
+		event-fan0-presence {
+			label = "fan0-presence";
+			gpios = <&pca4 10 GPIO_ACTIVE_LOW>;
+			linux,code = <10>;
+		};
+
+		event-fan1-presence {
+			label = "fan1-presence";
+			gpios = <&pca4 11 GPIO_ACTIVE_LOW>;
+			linux,code = <11>;
+		};
+
+		event-fan2-presence {
+			label = "fan2-presence";
+			gpios = <&pca4 12 GPIO_ACTIVE_LOW>;
+			linux,code = <12>;
+		};
+
+		event-fan3-presence {
+			label = "fan3-presence";
+			gpios = <&pca4 13 GPIO_ACTIVE_LOW>;
+			linux,code = <13>;
+		};
+
+		event-fan4-presence {
+			label = "fan4-presence";
+			gpios = <&pca4 14 GPIO_ACTIVE_LOW>;
+			linux,code = <14>;
+		};
+
+		event-fan5-presence {
+			label = "fan5-presence";
+			gpios = <&pca4 15 GPIO_ACTIVE_LOW>;
+			linux,code = <15>;
+		};
+
+		event-fan6-presence {
+			label = "fan6-presence";
+			gpios = <&pca4 16 GPIO_ACTIVE_LOW>;
+			linux,code = <16>;
 		};
 	};
 
@@ -914,24 +960,6 @@
 
 		gpio-controller;
 		#gpio-cells = <2>;
-
-		gpio-line-names =
-			"PE_NVMED0_EXP_PRSNT_N",
-			"PE_NVMED1_EXP_PRSNT_N",
-			"PE_NVMED2_EXP_PRSNT_N",
-			"PE_NVMED3_EXP_PRSNT_N",
-			"LED_FAULT_NVMED0",
-			"LED_FAULT_NVMED1",
-			"LED_FAULT_NVMED2",
-			"LED_FAULT_NVMED3",
-			"FAN0_PRESENCE_R_N",
-			"FAN1_PRESENCE_R_N",
-			"FAN2_PRESENCE_R_N",
-			"FAN3_PRESENCE_R_N",
-			"FAN4_PRESENCE_R_N",
-			"FAN5_PRESENCE_N",
-			"FAN6_PRESENCE_N",
-			"";
 	};
 };
 
