@@ -104,6 +104,7 @@ static int aspeed_espi_ctrl_probe(struct platform_device *pdev)
 		dev_err(dev, "cannot enable clock\n");
 		return rc;
 	}
+	espi_ctrl->dev = dev;
 
 	/*
 	 * This takes care of deferred probe , incase the mtd core
