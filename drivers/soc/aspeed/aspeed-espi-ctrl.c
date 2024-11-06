@@ -17,6 +17,9 @@
 #include <linux/vmalloc.h>
 
 #include "aspeed-espi-ctrl.h"
+#include "aspeed-espi-perif.h"
+#include "aspeed-espi-vw.h"
+#include "aspeed-espi-oob.h"
 #include "aspeed-espi-flash.h"
 
 /**
@@ -33,6 +36,21 @@ static irqreturn_t aspeed_espi_ctrl_isr(int irq, void *arg)
 
 	regmap_read(espi_ctrl->map, ESPI_INT_STS, &sts);
 
+	if (sts & ESPI_INT_STS_PERIF_BITS) {
+		aspeed_espi_perif_event(sts, espi_ctrl->perif);
+		regmap_write(espi_ctrl->map, ESPI_INT_STS, sts & ESPI_INT_STS_PERIF_BITS);
+	}
+
+	if (sts & ESPI_INT_STS_VW_BITS) {
+		aspeed_espi_vw_event(sts, espi_ctrl->vw);
+		regmap_write(espi_ctrl->map, ESPI_INT_STS, sts & ESPI_INT_STS_VW_BITS);
+	}
+
+	if (sts & (ESPI_INT_STS_OOB_BITS)) {
+		aspeed_espi_oob_event(sts, espi_ctrl->oob);
+		regmap_write(espi_ctrl->map, ESPI_INT_STS, sts & ESPI_INT_STS_OOB_BITS);
+	}
+
 	if (sts & ESPI_INT_STS_FLASH_BITS) {
 		aspeed_espi_flash_event(sts, espi_ctrl->flash);
 		regmap_write(espi_ctrl->map, ESPI_INT_STS,
@@ -40,6 +58,9 @@ static irqreturn_t aspeed_espi_ctrl_isr(int irq, void *arg)
 	}
 
 	if (sts & ESPI_INT_STS_HW_RST_DEASSERT) {
+		aspeed_espi_perif_enable(espi_ctrl->perif);
+		aspeed_espi_vw_enable(espi_ctrl->vw);
+		aspeed_espi_oob_enable(espi_ctrl->oob);
 		aspeed_espi_flash_enable(espi_ctrl->flash);
 
 		regmap_write(espi_ctrl->map, ESPI_SYSEVT_INT_T0, 0x0);
@@ -48,6 +69,11 @@ static irqreturn_t aspeed_espi_ctrl_isr(int irq, void *arg)
 
 		regmap_write(espi_ctrl->map, ESPI_SYSEVT1_INT_T0, 0x1);
 		regmap_write(espi_ctrl->map, ESPI_SYSEVT1_INT_EN, 0x1);
+
+		if (espi_ctrl->model->version == ESPI_AST2500)
+			regmap_write(espi_ctrl->map, ESPI_SYSEVT_INT_T2,
+				     ESPI_SYSEVT_INT_T2_HOST_RST_WARN |
+				     ESPI_SYSEVT_INT_T2_OOB_RST_WARN);
 
 		regmap_update_bits(espi_ctrl->map, ESPI_INT_EN,
 				   ESPI_INT_EN_HW_RST_DEASSERT,
@@ -106,6 +132,24 @@ static int aspeed_espi_ctrl_probe(struct platform_device *pdev)
 	}
 	espi_ctrl->dev = dev;
 
+	espi_ctrl->perif = aspeed_espi_perif_alloc(dev, espi_ctrl);
+	if (IS_ERR(espi_ctrl->perif)) {
+		dev_err(dev, "failed to allocate peripheral channel\n");
+		return PTR_ERR(espi_ctrl->perif);
+	}
+
+	espi_ctrl->vw = aspeed_espi_vw_alloc(dev, espi_ctrl);
+	if (IS_ERR(espi_ctrl->vw)) {
+		dev_err(dev, "failed to allocate virtual wire channel\n");
+		return PTR_ERR(espi_ctrl->vw);
+	}
+
+	espi_ctrl->oob = aspeed_espi_oob_alloc(dev, espi_ctrl);
+	if (IS_ERR(espi_ctrl->oob)) {
+		dev_err(dev, "failed to allocate out-of-band channel\n");
+		return PTR_ERR(espi_ctrl->oob);
+	}
+
 	/*
 	 * This takes care of deferred probe , incase the mtd core
 	 * subsystem is not probed yet.
@@ -132,14 +176,10 @@ static int aspeed_espi_ctrl_probe(struct platform_device *pdev)
 		return rc;
 	}
 
-	// clear the interrupt enable register
-	regmap_write(espi_ctrl->map, ESPI_INT_EN_CLR, 0x7fffffff);
-
 	// Disable the interrupts in all channels except flash channel
 	regmap_update_bits(espi_ctrl->map, ESPI_INT_EN,
-			   ESPI_INT_EN_FLASH_BITS | ESPI_INT_EN_HW_RST_DEASSERT,
-			   ESPI_INT_EN_FLASH_BITS |
-				   ESPI_INT_STS_HW_RST_DEASSERT);
+			   ESPI_INT_EN_HW_RST_DEASSERT,
+			   ESPI_INT_EN_HW_RST_DEASSERT);
 
 	dev_set_drvdata(dev, espi_ctrl);
 
@@ -159,6 +199,9 @@ static void aspeed_espi_ctrl_remove(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct aspeed_espi_ctrl *espi_ctrl = dev_get_drvdata(dev);
 
+	aspeed_espi_perif_free(dev, espi_ctrl->perif);
+	aspeed_espi_vw_free(dev, espi_ctrl->vw);
+	aspeed_espi_oob_free(dev, espi_ctrl->oob);
 	aspeed_espi_flash_free(dev, espi_ctrl->flash);
 }
 

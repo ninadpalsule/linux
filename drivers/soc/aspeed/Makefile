@@ -6,5 +6,8 @@ obj-$(CONFIG_ASPEED_P2A_CTRL)		+= aspeed-p2a-ctrl.o
 obj-$(CONFIG_ASPEED_SOCINFO)		+= aspeed-socinfo.o
 obj-$(CONFIG_ASPEED_SBC)		+= aspeed-sbc.o
 obj-$(CONFIG_ASPEED_XDMA)		+= aspeed-xdma.o
-obj-$(CONFIG_ASPEED_ESPI)               += aspeed-espi-ctrl.o
+obj-$(CONFIG_ASPEED_ESPI)               += aspeed-espi-ctrl.o \
+                                           aspeed-espi-perif.o \
+                                           aspeed-espi-vw.o \
+                                           aspeed-espi-oob.o 
 obj-$(CONFIG_ASPEED_ESPI_FLASH_MAFS)    += aspeed-espi-flash-mafs.o
