@@ -159,7 +159,8 @@ static int aspeed_espi_ctrl_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to allocate flash channel\n");
 		pr_info("flash alloc failed with return code %ld\n",
 			PTR_ERR(espi_ctrl->flash));
-		return PTR_ERR(espi_ctrl->flash);
+		rc = PTR_ERR(espi_ctrl->flash);
+                goto err_free_resources;
 	}
 
 	regmap_write(espi_ctrl->map, ESPI_SYSEVT_INT_T0, 0x0);
@@ -186,6 +187,14 @@ static int aspeed_espi_ctrl_probe(struct platform_device *pdev)
 	dev_info(dev, "module loaded\n");
 
 	return 0;
+
+err_free_resources:
+       aspeed_espi_oob_free(dev, espi_ctrl->oob);
+       aspeed_espi_vw_free(dev, espi_ctrl->vw);
+       aspeed_espi_perif_free(dev, espi_ctrl->perif);
+       return rc;
+
+
 }
 
 /**
