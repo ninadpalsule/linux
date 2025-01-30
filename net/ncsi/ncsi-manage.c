@@ -410,7 +410,7 @@ void ncsi_free_request(struct ncsi_request *nr)
 	driven = !!(nr->flags & NCSI_REQ_FLAG_EVENT_DRIVEN);
 	spin_unlock_irqrestore(&ndp->lock, flags);
 
-	if (driven && cmd && --ndp->pending_req_num == 0)
+	if (driven && cmd && --ndp->pending_req_num == 0 && !(ndp->flags & NCSI_DEV_SHUTDOWN))
 		schedule_work(&ndp->work);
 
 	/* Release command and response */
@@ -1055,7 +1055,7 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
 		ret = ncsi_gma_handler(&nca, nc->version.mf_id);
 #endif /* CONFIG_NCSI_OEM_CMD_GET_MAC */
 
-		if (ret < 0)
+		if (ret < 0 && !(ndp->flags & NCSI_DEV_SHUTDOWN))
 			schedule_work(&ndp->work);
 
 		break;
@@ -1079,7 +1079,8 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
 			ret = clear_one_vid(ndp, nc, &nca);
 			if (ret) {
 				nd->state = ncsi_dev_state_config_svf;
-				schedule_work(&ndp->work);
+				if (!(ndp->flags & NCSI_DEV_SHUTDOWN))
+					schedule_work(&ndp->work);
 				break;
 			}
 			/* Repeat */
@@ -1089,7 +1090,8 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
 			ret = set_one_vid(ndp, nc, &nca);
 			if (ret) {
 				nd->state = ncsi_dev_state_config_ev;
-				schedule_work(&ndp->work);
+				if (!(ndp->flags & NCSI_DEV_SHUTDOWN))
+					schedule_work(&ndp->work);
 				break;
 			}
 			/* Repeat */
@@ -1396,7 +1398,8 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
 		if (!ndp->active_package) {
 			/* No response */
 			nd->state = ncsi_dev_state_probe_dp;
-			schedule_work(&ndp->work);
+			if (!(ndp->flags & NCSI_DEV_SHUTDOWN))
+				schedule_work(&ndp->work);
 			break;
 		}
 		nd->state = ncsi_dev_state_probe_cis;
@@ -1404,7 +1407,8 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
 		    ndp->mlx_multi_host)
 			nd->state = ncsi_dev_state_probe_mlx_gma;
 
-		schedule_work(&ndp->work);
+		if (!(ndp->flags & NCSI_DEV_SHUTDOWN))
+			schedule_work(&ndp->work);
 		break;
 #if IS_ENABLED(CONFIG_NCSI_OEM_CMD_GET_MAC)
 	case ncsi_dev_state_probe_mlx_gma:
@@ -1825,7 +1829,8 @@ int ncsi_start_dev(struct ncsi_dev *nd)
 	if (!(ndp->flags & NCSI_DEV_PROBED)) {
 		ndp->package_probe_id = 0;
 		nd->state = ncsi_dev_state_probe;
-		schedule_work(&ndp->work);
+		if (!(ndp->flags & NCSI_DEV_SHUTDOWN))
+			schedule_work(&ndp->work);
 		return 0;
 	}
 
@@ -1947,7 +1952,8 @@ int ncsi_reset_dev(struct ncsi_dev *nd)
 	spin_unlock_irqrestore(&ndp->lock, flags);
 
 	nd->state = ncsi_dev_state_suspend;
-	schedule_work(&ndp->work);
+	if (!(ndp->flags & NCSI_DEV_SHUTDOWN))
+		schedule_work(&ndp->work);
 	return 0;
 }
 
@@ -1966,6 +1972,7 @@ void ncsi_unregister_dev(struct ncsi_dev *nd)
 	list_del_rcu(&ndp->node);
 	spin_unlock_irqrestore(&ncsi_dev_lock, flags);
 
+	ndp->flags |= NCSI_DEV_SHUTDOWN;
 	cancel_work_sync(&ndp->work);
 
 	kfree(ndp);

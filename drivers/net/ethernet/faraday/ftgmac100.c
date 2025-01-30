@@ -109,6 +109,7 @@ struct ftgmac100 {
 	/* Misc */
 	bool need_mac_restart;
 	bool is_aspeed;
+	bool shutdown;
 };
 
 static int ftgmac100_reset_mac(struct ftgmac100 *priv, u32 maccr)
@@ -1110,7 +1111,7 @@ ftgmac100_set_ringparam(struct net_device *netdev,
 
 	priv->new_rx_q_entries = ering->rx_pending;
 	priv->new_tx_q_entries = ering->tx_pending;
-	if (netif_running(netdev))
+	if (netif_running(netdev) && !priv->shutdown)
 		schedule_work(&priv->reset_task);
 
 	return 0;
@@ -1188,7 +1189,8 @@ static irqreturn_t ftgmac100_interrupt(int irq, void *dev_id)
 				netdev_warn(netdev,
 					   "AHB bus error ! Resetting chip.\n");
 			iowrite32(0, priv->base + FTGMAC100_OFFSET_IER);
-			schedule_work(&priv->reset_task);
+			if (!priv->shutdown)
+				schedule_work(&priv->reset_task);
 			return IRQ_HANDLED;
 		}
 
@@ -1600,7 +1602,8 @@ static void ftgmac100_tx_timeout(struct net_device *netdev, unsigned int txqueue
 	iowrite32(0, priv->base + FTGMAC100_OFFSET_IER);
 
 	/* Do the reset outside of interrupt context */
-	schedule_work(&priv->reset_task);
+	if (!priv->shutdown)
+		schedule_work(&priv->reset_task);
 }
 
 static int ftgmac100_set_features(struct net_device *netdev,
@@ -2032,6 +2035,7 @@ static int ftgmac100_remove(struct platform_device *pdev)
 	/* There's a small chance the reset task will have been re-queued,
 	 * during stop, make sure it's gone before we free the structure.
 	 */
+	priv->shutdown = true;
 	cancel_work_sync(&priv->reset_task);
 
 	ftgmac100_phy_disconnect(netdev);
