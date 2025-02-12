@@ -577,6 +577,32 @@
 				status = "disabled";
 			};
 
+			pcie_lpc: lpc@1e789800 {
+				compatible = "aspeed,ast2600-lpc-v2", "simple-mfd", "syscon";
+				reg = <0x1e789800 0x800>;
+				reg-io-width = <4>;
+
+				#address-cells = <1>;
+				#size-cells = <1>;
+				ranges = <0x0 0x1e789800 0x800>;
+
+				kcs2: kcs@28 {
+				        compatible = "aspeed,ast2500-kcs-bmc-v2";
+					reg = <0x28 0x1>, <0x34 0x1>, <0x40 0x1>;
+					interrupts = <GIC_SPI 175 IRQ_TYPE_LEVEL_HIGH>;
+					clocks = <&syscon ASPEED_CLK_GATE_LCLK>;
+					status = "disabled";
+				};
+
+				kcs3: kcs@2c {
+					compatible = "aspeed,ast2500-kcs-bmc-v2";
+					reg = <0x2c 0x1>, <0x38 0x1>, <0x44 0x1>;
+					interrupts = <GIC_SPI 176 IRQ_TYPE_LEVEL_HIGH>;
+					clocks = <&syscon ASPEED_CLK_GATE_LCLK>;
+					status = "disabled";
+				};
+			};
+
 			peci0: peci-controller@1e78b000 {
 				compatible = "aspeed,ast2600-peci";
 				reg = <0x1e78b000 0x100>;
@@ -597,7 +623,7 @@
 				#size-cells = <1>;
 				ranges = <0x0 0x1e789000 0x1000>;
 
-				kcs1: kcs@24 {
+				lpc_kcs1: kcs@24 {
 					compatible = "aspeed,ast2500-kcs-bmc-v2";
 					reg = <0x24 0x1>, <0x30 0x1>, <0x3c 0x1>;
 					interrupts = <GIC_SPI 138 IRQ_TYPE_LEVEL_HIGH>;
@@ -606,7 +632,7 @@
 					status = "disabled";
 				};
 
-				kcs2: kcs@28 {
+				lpc_kcs2: kcs@28 {
 					compatible = "aspeed,ast2500-kcs-bmc-v2";
 					reg = <0x28 0x1>, <0x34 0x1>, <0x40 0x1>;
 					interrupts = <GIC_SPI 139 IRQ_TYPE_LEVEL_HIGH>;
@@ -614,7 +640,7 @@
 					status = "disabled";
 				};
 
-				kcs3: kcs@2c {
+				lpc_kcs3: kcs@2c {
 					compatible = "aspeed,ast2500-kcs-bmc-v2";
 					reg = <0x2c 0x1>, <0x38 0x1>, <0x44 0x1>;
 					interrupts = <GIC_SPI 140 IRQ_TYPE_LEVEL_HIGH>;
@@ -622,7 +648,7 @@
 					status = "disabled";
 				};
 
-				kcs4: kcs@114 {
+				lpc_kcs4: kcs@114 {
 					compatible = "aspeed,ast2500-kcs-bmc-v2";
 					reg = <0x114 0x1>, <0x118 0x1>, <0x11c 0x1>;
 					interrupts = <GIC_SPI 141 IRQ_TYPE_LEVEL_HIGH>;
@@ -719,42 +745,22 @@
 				};
 			};
 
-			vuart1: serial@1e787000 {
-				compatible = "aspeed,ast2500-vuart";
-				reg = <0x1e787000 0x40>;
-				reg-shift = <2>;
-				interrupts = <GIC_SPI 147 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&syscon ASPEED_CLK_APB1>;
-				no-loopback-test;
-				status = "disabled";
-			};
-
-			vuart3: serial@1e787800 {
+			vuart1: serial@1e787800 {
 				compatible = "aspeed,ast2500-vuart";
 				reg = <0x1e787800 0x40>;
 				reg-shift = <2>;
 				interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&syscon ASPEED_CLK_APB2>;
-				no-loopback-test;
-				status = "disabled";
-			};
-
-			vuart2: serial@1e788000 {
-				compatible = "aspeed,ast2500-vuart";
-				reg = <0x1e788000 0x40>;
-				reg-shift = <2>;
-				interrupts = <GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>;
 				clocks = <&syscon ASPEED_CLK_APB1>;
 				no-loopback-test;
 				status = "disabled";
 			};
 
-			vuart4: serial@1e788800 {
+			vuart2: serial@1e788800 {
 				compatible = "aspeed,ast2500-vuart";
 				reg = <0x1e788800 0x40>;
 				reg-shift = <2>;
 				interrupts = <GIC_SPI 181 IRQ_TYPE_LEVEL_HIGH>;
-				clocks = <&syscon ASPEED_CLK_APB2>;
+				clocks = <&syscon ASPEED_CLK_APB1>;
 				no-loopback-test;
 				status = "disabled";
 			};
